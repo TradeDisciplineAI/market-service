@@ -1,3 +1,4 @@
+import logging
 from collections.abc import AsyncGenerator, Generator
 from urllib.parse import urlsplit, urlunsplit
 
@@ -13,6 +14,7 @@ from sqlalchemy.ext.asyncio import (
 from market_service.core.config import get_settings
 from market_service.core.database import Base
 
+logger = logging.getLogger(__name__)
 settings = get_settings()
 
 db_url = settings.database_url.get_secret_value()
@@ -32,9 +34,9 @@ async def create_test_db() -> None:
             if not result.scalar():
                 await conn.execute(text("CREATE DATABASE market_test_db"))
         await engine.dispose()
-    except Exception:
+    except Exception as exc:
         # PostgreSQL host may not be running during standalone unit test runs
-        pass
+        logger.debug("PostgreSQL host connection skipped during test setup: %s", exc)
 
 
 @pytest.fixture
@@ -47,8 +49,8 @@ async def db_engine() -> AsyncGenerator[AsyncEngine]:
     try:
         async with engine.begin() as conn:
             await conn.run_sync(Base.metadata.create_all)
-    except Exception:
-        pass
+    except Exception as exc:
+        logger.debug("Skipped test schema creation: %s", exc)
 
     yield engine
     await engine.dispose()
