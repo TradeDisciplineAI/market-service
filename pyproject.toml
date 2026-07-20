@@ -1,0 +1,96 @@
+[project]
+name = "market-service"
+version = "0.1.0"
+description = "Market Service microservice for market data, pricing, and streaming."
+readme = "README.md"
+authors = [
+    { name = "Trading Discipline Team" }
+]
+requires-python = ">=3.13"
+
+dependencies = [
+    "alembic>=1.18.5",
+    "asyncpg>=0.31.0",
+    "celery>=5.6.3",
+    "fastapi[standard]>=0.138.2",
+    "httpx>=0.28.1",
+    "pydantic>=2.13.4",
+    "pydantic-settings>=2.14.2",
+    "pyjwt[crypto]>=2.13.0",
+    "redis<5.0.0",
+    "slowapi>=0.1.9",
+    "sqlalchemy>=2.0.51",
+    "uvicorn>=0.49.0",
+    "websockets>=16.0",
+]
+
+[build-system]
+requires = ["uv_build>=0.11.22,<0.12.0"]
+build-backend = "uv_build"
+
+[dependency-groups]
+dev = [
+    "locust>=2.45.0",
+    "mypy>=2.1.0",
+    "pip-audit>=2.10.1",
+    "pre-commit>=4.6.0",
+    "pytest>=9.1.1",
+    "pytest-asyncio>=1.4.0",
+    "pytest-cov>=7.1.0",
+    "ruff>=0.15.20",
+    "semgrep>=1.170.0",
+]
+
+[tool.pytest.ini_options]
+pythonpath = ["src"]
+testpaths = ["tests"]
+asyncio_mode = "auto"
+addopts = "-ra --cov=src --cov-report=term-missing"
+
+[tool.mypy]
+plugins = ["pydantic.mypy"]
+python_version = "3.13"
+strict = true
+warn_unused_configs = false
+disallow_untyped_defs = true
+disallow_untyped_decorators = false
+no_implicit_reexport = true
+warn_redundant_casts = true
+warn_unused_ignores = true
+pretty = true
+show_error_codes = true
+
+[[tool.mypy.overrides]]
+module = [
+    "celery",
+    "celery.*",
+    "redis",
+    "redis.*",
+    "slowapi.*",
+]
+ignore_missing_imports = true
+
+[tool.ruff]
+target-version = "py313"
+line-length = 88
+exclude = [
+    "alembic/**",
+    "main.py",
+]
+
+[tool.ruff.lint]
+select = ["E", "F", "I", "N", "UP", "ANN", "S", "B", "SIM"]
+
+[tool.ruff.lint.per-file-ignores]
+"tests/**" = ["S101", "ANN", "S105", "S106", "E501"]
+"alembic/versions/*.py" = ["E501"]
+
+[tool.coverage.run]
+source = ["market_service"]
+
+[tool.coverage.paths]
+source = [
+    "src/market_service",
+    "*/site-packages/market_service",
+    "*\\site-packages\\market_service",
+]
