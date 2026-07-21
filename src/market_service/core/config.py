@@ -40,7 +40,7 @@ class Settings(BaseSettings):
 
     # Market Providers & Redis
     finnhub_api_key: SecretStr | None = None
-    redis_url: str = "redis://redis:6379/0"
+    redis_url: str = "redis://localhost:6379/0"
 
     # CORS
     allowed_origins: list[str] = [
