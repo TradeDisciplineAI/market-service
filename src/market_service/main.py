@@ -73,3 +73,11 @@ async def root() -> dict[str, str]:
 async def health() -> dict[str, str]:
     return {"status": "ok", "version": settings.app_version, "env": settings.app_env}
 
+
+@app.get("/health/celery-ping")
+async def celery_ping() -> dict[str, str]:
+    from market_service.tasks.system_tasks import ping_market_worker
+
+    task = ping_market_worker.delay()
+    return {"status": "enqueued", "task_id": task.id, "queue": "market_queue"}
+
