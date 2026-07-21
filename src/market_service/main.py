@@ -34,7 +34,7 @@ app = FastAPI(
 
 # Attach limiter state and exception handler
 app.state.limiter = limiter
-app.add_exception_handler(RateLimitExceeded, _rate_limit_exceeded_handler)  # type: ignore[arg-type]
+app.add_exception_handler(RateLimitExceeded, _rate_limit_exceeded_handler)
 
 app.add_middleware(
     TrustedHostMiddleware,
@@ -80,4 +80,3 @@ async def celery_ping() -> dict[str, str]:
 
     task = ping_market_worker.delay()
     return {"status": "enqueued", "task_id": task.id, "queue": "market_queue"}
-
