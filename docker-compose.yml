@@ -12,7 +12,7 @@
 # =============================================================================
 
 services:
-  app:
+  market_app:
     build:
       context: .
       dockerfile: Dockerfile
