@@ -39,7 +39,7 @@ class PortfolioHolding(Base):
     )
 
     symbol: Mapped[str] = mapped_column(
-        String(10),
+        String(20),
         nullable=False,
         index=True,
     )

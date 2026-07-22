@@ -5,7 +5,7 @@ from pydantic import BaseModel, Field
 
 
 class PortfolioHoldingCreate(BaseModel):
-    symbol: str = Field(..., min_length=1, max_length=10)
+    symbol: str = Field(..., min_length=1, max_length=20)
 
 
 class PortfolioHoldingResponse(BaseModel):
