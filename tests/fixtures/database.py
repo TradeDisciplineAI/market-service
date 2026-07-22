@@ -75,6 +75,7 @@ async def db_engine() -> AsyncGenerator[AsyncEngine]:
     )
 
     async with engine.begin() as conn:
+        await conn.execute(text("CREATE SCHEMA IF NOT EXISTS market"))
         await conn.run_sync(Base.metadata.create_all)
         try:
             for table in reversed(Base.metadata.sorted_tables):
