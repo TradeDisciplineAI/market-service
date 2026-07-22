@@ -1,5 +1,7 @@
-"""SQLAlchemy ORM models package for Market Service."""
+from .portfolio import Portfolio
+from .portfolio_holding import PortfolioHolding
 
-from market_service.core.database import Base
-
-__all__ = ["Base"]
+__all__ = [
+    "Portfolio",
+    "PortfolioHolding",
+]
