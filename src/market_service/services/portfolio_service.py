@@ -1,4 +1,5 @@
 import asyncio
+import logging
 import uuid
 
 from sqlalchemy.ext.asyncio import AsyncSession
@@ -18,6 +19,8 @@ from market_service.schemas.portfolio import (
     PortfolioHoldingResponse,
     PortfolioResponse,
 )
+
+logger = logging.getLogger(__name__)
 
 
 class PortfolioService:
@@ -55,12 +58,21 @@ class PortfolioService:
 
         enriched_holdings = []
         if portfolio.holdings:
-            quotes = await asyncio.gather(
-                *(
-                    yfinance_service.get_stock_quote(h.symbol)
-                    for h in portfolio.holdings
+            try:
+                quotes = await asyncio.wait_for(
+                    asyncio.gather(
+                        *(
+                            yfinance_service.get_stock_quote(h.symbol)
+                            for h in portfolio.holdings
+                        )
+                    ),
+                    timeout=2.5,
                 )
-            )
+            except TimeoutError:
+                logger.warning(
+                    "YFinance quote fetch timed out, returning cached/None values"
+                )
+                quotes = [None] * len(portfolio.holdings)
 
             for h, q in zip(portfolio.holdings, quotes, strict=True):
                 holding_model = PortfolioHoldingResponse(
