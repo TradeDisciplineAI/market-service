@@ -17,9 +17,13 @@ class PortfolioRepository:
     ) -> Portfolio:
         db.add(portfolio)
         await db.commit()
-        await db.refresh(portfolio)
-        portfolio.holdings = []
-        return portfolio
+        stmt = (
+            select(Portfolio)
+            .where(Portfolio.id == portfolio.id)
+            .options(selectinload(Portfolio.holdings))
+        )
+        result = await db.execute(stmt)
+        return result.scalar_one()
 
     async def get_portfolio_by_user(
         self,
