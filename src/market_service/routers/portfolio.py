@@ -2,7 +2,6 @@ from fastapi import APIRouter, status
 
 from market_service.core.dependencies import CurrentUserDep, DbDep
 from market_service.models.portfolio import Portfolio
-from market_service.models.portfolio_holding import PortfolioHolding
 from market_service.schemas.portfolio import (
     PortfolioCreate,
     PortfolioHoldingCreate,
@@ -43,7 +42,7 @@ async def create_portfolio(
 async def get_portfolio(
     db: DbDep,
     current_user: CurrentUserDep,
-) -> Portfolio:
+) -> PortfolioResponse:
     return await service.get_portfolio(db, current_user.user_id)
 
 
@@ -56,7 +55,7 @@ async def add_holding(
     db: DbDep,
     current_user: CurrentUserDep,
     holding_in: PortfolioHoldingCreate,
-) -> PortfolioHolding:
+) -> PortfolioHoldingResponse:
     return await service.add_holding(db, current_user.user_id, holding_in)
 
 

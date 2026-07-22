@@ -13,6 +13,9 @@ class PortfolioHoldingResponse(BaseModel):
     portfolio_id: uuid.UUID
     symbol: str
     created_at: datetime
+    price: float | None = None
+    percent_change: float | None = None
+    currency: str | None = None
 
     model_config = {
         "from_attributes": True,
