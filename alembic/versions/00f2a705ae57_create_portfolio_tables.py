@@ -20,6 +20,7 @@ depends_on: Union[str, Sequence[str], None] = None
 
 def upgrade() -> None:
     """Upgrade schema."""
+    op.execute("CREATE SCHEMA IF NOT EXISTS market")
     op.create_table(
         "portfolios",
         sa.Column("id", sa.UUID(), nullable=False),
@@ -120,3 +121,4 @@ def downgrade() -> None:
         "portfolios",
         schema="market",
     )
+    op.execute("DROP SCHEMA IF EXISTS market CASCADE")

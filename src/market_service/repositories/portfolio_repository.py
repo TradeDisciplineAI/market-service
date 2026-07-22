@@ -18,6 +18,7 @@ class PortfolioRepository:
         db.add(portfolio)
         await db.commit()
         await db.refresh(portfolio)
+        portfolio.holdings = []
         return portfolio
 
     async def get_portfolio_by_user(
