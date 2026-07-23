@@ -117,25 +117,28 @@ class PortfolioService:
         if len(portfolio.holdings) >= 5:
             raise BadRequestException("Portfolio cannot contain more than 5 stocks")
 
+        from market_service.services.yfinance_service import YFinanceService
+
+        yfinance_service = YFinanceService()
+        q = await yfinance_service.get_stock_quote(symbol)
+
+        if not q or q.current_price is None:
+            raise BadRequestException(f"Invalid or unsupported stock symbol '{symbol}'")
+
         holding = PortfolioHolding(
             portfolio_id=portfolio.id,
             symbol=symbol,
         )
         saved_holding = await self.repository.add_holding(db, holding)
 
-        from market_service.services.yfinance_service import YFinanceService
-
-        yfinance_service = YFinanceService()
-        q = await yfinance_service.get_stock_quote(symbol)
-
         return PortfolioHoldingResponse(
             id=saved_holding.id,
             portfolio_id=saved_holding.portfolio_id,
             symbol=saved_holding.symbol,
             created_at=saved_holding.created_at,
-            price=q.current_price if q else None,
-            percent_change=q.percent_change if q else None,
-            currency=q.currency if q else "USD",
+            price=q.current_price,
+            percent_change=q.percent_change,
+            currency=q.currency or "USD",
         )
 
     async def remove_holding(

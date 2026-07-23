@@ -7,8 +7,10 @@ import yfinance as yf
 with suppress(Exception):
     yf.set_tz_cache_location("/tmp/py-yfinance")  # noqa: S108
 
+import httpx
+
 from market_service.schemas.gainers import GainerStock
-from market_service.schemas.stock import StockQuote
+from market_service.schemas.stock import StockQuote, StockSearchResult
 
 logger = logging.getLogger(__name__)
 
@@ -109,3 +111,43 @@ class YFinanceService:
 
     async def get_gainers(self) -> list[GainerStock]:
         return await asyncio.to_thread(self._fetch_gainers_sync)
+
+    async def search_stocks(self, query: str) -> list[StockSearchResult]:
+        """Search Yahoo Finance for stock symbols matching the search query."""
+        clean_query = query.strip()
+        if not clean_query:
+            return []
+
+        headers = {"User-Agent": "Mozilla/5.0"}
+        params: dict[str, str] = {"q": clean_query, "quotesCount": "10"}
+
+        try:
+            async with httpx.AsyncClient() as client:
+                res = await client.get(
+                    "https://query2.finance.yahoo.com/v1/finance/search",
+                    params=params,
+                    headers=headers,
+                    timeout=5.0,
+                )
+                if res.status_code != 200:
+                    logger.warning("Yahoo search API status %s", res.status_code)
+                    return []
+
+                data = res.json()
+                results = []
+                for item in data.get("quotes", []):
+                    symbol = item.get("symbol")
+                    name = item.get("shortname") or item.get("longname") or symbol
+                    if symbol:
+                        results.append(
+                            StockSearchResult(
+                                symbol=symbol,
+                                name=name,
+                                exchange=item.get("exchDisp") or item.get("exchange"),
+                                quote_type=item.get("quoteType"),
+                            )
+                        )
+                return results
+        except Exception:
+            logger.exception("Failed to search stocks for query: %s", query)
+            return []
