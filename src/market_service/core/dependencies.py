@@ -7,7 +7,7 @@ from collections.abc import AsyncGenerator
 from typing import Annotated
 
 from fastapi import Depends
-from fastapi.security import OAuth2PasswordBearer
+from fastapi.security import HTTPAuthorizationCredentials, HTTPBearer
 from pydantic import BaseModel
 from sqlalchemy.ext.asyncio import AsyncSession
 
@@ -15,7 +15,15 @@ from .database import AsyncSessionFactory
 from .exceptions import UnauthorizedException
 from .security import decode_access_token
 
-oauth2_scheme = OAuth2PasswordBearer(tokenUrl="/auth/login", auto_error=False)
+security_scheme = HTTPBearer(auto_error=False)
+
+
+def get_token(
+    credentials: HTTPAuthorizationCredentials | None = Depends(security_scheme),  # noqa: B008
+) -> str | None:
+    if credentials:
+        return credentials.credentials
+    return None
 
 
 class CurrentUser(BaseModel):
@@ -35,7 +43,7 @@ async def get_db() -> AsyncGenerator[AsyncSession]:
 
 
 async def get_current_user(
-    token: Annotated[str | None, Depends(oauth2_scheme)],
+    token: Annotated[str | None, Depends(get_token)],
 ) -> CurrentUser:
     """Extract authenticated user claims statelessly from a valid JWT access token."""
 
