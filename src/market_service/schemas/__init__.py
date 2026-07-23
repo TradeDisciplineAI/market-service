@@ -5,10 +5,11 @@ from .portfolio import (
     PortfolioHoldingResponse,
     PortfolioResponse,
 )
-from .stock import StockQuote
+from .stock import StockQuote, StockSearchResult
 
 __all__ = [
     "StockQuote",
+    "StockSearchResult",
     "GainerStock",
     "PortfolioCreate",
     "PortfolioHoldingCreate",

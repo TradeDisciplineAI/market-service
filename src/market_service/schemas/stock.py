@@ -8,3 +8,10 @@ class StockQuote(BaseModel):
     percent_change: float | None = None
     previous_close: float | None = None
     currency: str = "USD"
+
+
+class StockSearchResult(BaseModel):
+    symbol: str
+    name: str
+    exchange: str | None = None
+    quote_type: str | None = None
