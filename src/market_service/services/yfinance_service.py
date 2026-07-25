@@ -10,7 +10,11 @@ with suppress(Exception):
 import httpx
 
 from market_service.schemas.gainers import GainerStock
-from market_service.schemas.stock import StockQuote, StockSearchResult
+from market_service.schemas.stock import (
+    StockQuote,
+    StockSearchResult,
+    TradingViewCandle,
+)
 
 logger = logging.getLogger(__name__)
 
@@ -82,6 +86,31 @@ class YFinanceService:
         except Exception:
             logger.exception("Failed to fetch quote data for %s", symbol)
             return None
+
+    def _fetch_historical_sync(self, symbol: str, period: str = "1mo") -> list[TradingViewCandle]:
+        ticker = yf.Ticker(symbol)
+        history = ticker.history(period=period)
+        
+        candles = []
+        for date, row in history.iterrows():
+            time_str = date.strftime("%Y-%m-%d")
+            candles.append(
+                TradingViewCandle(
+                    time=time_str,
+                    open=float(row["Open"]),
+                    high=float(row["High"]),
+                    low=float(row["Low"]),
+                    close=float(row["Close"]),
+                )
+            )
+        return candles
+
+    async def get_historical_data(self, symbol: str, period: str = "1mo") -> list[TradingViewCandle]:
+        try:
+            return await asyncio.to_thread(self._fetch_historical_sync, symbol, period)
+        except Exception:
+            logger.exception("Failed to fetch historical data for %s", symbol)
+            return []
 
     def _fetch_gainers_sync(self) -> list[GainerStock]:
         gainers = []

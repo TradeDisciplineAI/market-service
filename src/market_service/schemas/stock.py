@@ -15,3 +15,18 @@ class StockSearchResult(BaseModel):
     name: str
     exchange: str | None = None
     quote_type: str | None = None
+
+
+class TradingViewCandle(BaseModel):
+    time: str
+    open: float
+    high: float
+    low: float
+    close: float
+
+
+class StockAnalysisResponse(BaseModel):
+    symbol: str
+    authorized: bool
+    chart_data: list[TradingViewCandle]
+    analysis: dict[str, str]

@@ -4,10 +4,15 @@ from typing import Any
 
 from fastapi import APIRouter, Query, WebSocket, WebSocketDisconnect
 
+from market_service.core.dependencies import CurrentUserDep
 from market_service.core.redis import get_market_analysis
 from market_service.core.websocket_manager import manager
 from market_service.schemas.gainers import GainerStock
-from market_service.schemas.stock import StockQuote, StockSearchResult
+from market_service.schemas.stock import (
+    StockAnalysisResponse,
+    StockQuote,
+    StockSearchResult,
+)
 from market_service.services.yfinance_service import YFinanceService
 
 logger = logging.getLogger(__name__)
@@ -22,6 +27,36 @@ router = APIRouter(
 @router.get("/quote/{symbol}", response_model=StockQuote)
 async def get_stock_quote(symbol: str) -> StockQuote | None:
     return await service.get_stock_quote(symbol)
+
+
+@router.get("/analyze-stock/{symbol}", response_model=StockAnalysisResponse)
+async def analyze_stock(
+    symbol: str,
+    current_user: CurrentUserDep,
+) -> StockAnalysisResponse:
+    """Secure endpoint that fetches historical data and formats it for TradingView."""
+    chart_data = await service.get_historical_data(symbol, period="1mo")
+    
+    analysis = {}
+    if chart_data:
+        latest = chart_data[-1]
+        oldest = chart_data[0]
+        if latest.close > oldest.close:
+            analysis["trend"] = "BULLISH"
+            analysis["recommendation"] = "HOLD/BUY"
+        else:
+            analysis["trend"] = "BEARISH"
+            analysis["recommendation"] = "HOLD/SELL"
+    else:
+        analysis["trend"] = "UNKNOWN"
+        analysis["recommendation"] = "NONE"
+
+    return StockAnalysisResponse(
+        symbol=symbol.upper(),
+        authorized=True,
+        chart_data=chart_data,
+        analysis=analysis,
+    )
 
 
 @router.get(
