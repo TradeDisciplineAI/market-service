@@ -12,6 +12,7 @@ from slowapi.errors import RateLimitExceeded
 from .core.config import get_settings
 from .core.exceptions import AppException
 from .core.limiter import limiter
+from .routers.alerts import router as alerts_router
 from .routers.dashboard import router as dashboard_router
 from .routers.portfolio import router as portfolio_router
 
@@ -84,3 +85,4 @@ async def celery_ping() -> dict[str, str]:
 
 app.include_router(dashboard_router)
 app.include_router(portfolio_router)
+app.include_router(alerts_router)

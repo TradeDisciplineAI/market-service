@@ -38,9 +38,11 @@ class Settings(BaseSettings):
     # Hosts
     allowed_hosts: list[str] = ["localhost", "127.0.0.1"]
 
-    # Market Providers & Redis
+    # Market Providers, Redis & Resend Email
     finnhub_api_key: SecretStr | None = None
     redis_url: str = "redis://localhost:6379/0"
+    resend_api_key: SecretStr | None = None
+    email_from: str = "onboarding@resend.dev"
 
     # CORS
     allowed_origins: list[str] = [
