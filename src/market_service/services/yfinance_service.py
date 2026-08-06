@@ -87,10 +87,12 @@ class YFinanceService:
             logger.exception("Failed to fetch quote data for %s", symbol)
             return None
 
-    def _fetch_historical_sync(self, symbol: str, period: str = "1mo") -> list[TradingViewCandle]:
+    def _fetch_historical_sync(
+        self, symbol: str, period: str = "1mo"
+    ) -> list[TradingViewCandle]:
         ticker = yf.Ticker(symbol)
         history = ticker.history(period=period)
-        
+
         candles = []
         for date, row in history.iterrows():
             time_str = date.strftime("%Y-%m-%d")
@@ -105,7 +107,9 @@ class YFinanceService:
             )
         return candles
 
-    async def get_historical_data(self, symbol: str, period: str = "1mo") -> list[TradingViewCandle]:
+    async def get_historical_data(
+        self, symbol: str, period: str = "1mo"
+    ) -> list[TradingViewCandle]:
         try:
             return await asyncio.to_thread(self._fetch_historical_sync, symbol, period)
         except Exception:

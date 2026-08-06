@@ -9,6 +9,7 @@ from market_service.core.exceptions import (
     ConflictException,
     ForbiddenException,
     NotFoundException,
+    PaymentRequiredException,
 )
 from market_service.models.portfolio import Portfolio
 from market_service.models.portfolio_holding import PortfolioHolding
@@ -117,6 +118,24 @@ class PortfolioService:
         if len(portfolio.holdings) >= 5:
             raise BadRequestException("Portfolio cannot contain more than 5 stocks")
 
+        # Verify 6-trade free limit
+        from sqlalchemy import text
+
+        user_res = await db.execute(
+            text(
+                "SELECT trades_count, subscription_tier "
+                "FROM authentication.users WHERE id = :user_id"
+            ),
+            {"user_id": user_id},
+        )
+        user_row = user_res.fetchone()
+        if user_row:
+            trades_count, tier = user_row[0], user_row[1]
+            if tier == "FREE" and trades_count >= 6:
+                raise PaymentRequiredException(
+                    "Free trade limit reached (6/6). Upgrade to Pro."
+                )
+
         from market_service.services.yfinance_service import YFinanceService
 
         yfinance_service = YFinanceService()
@@ -130,6 +149,16 @@ class PortfolioService:
             symbol=symbol,
         )
         saved_holding = await self.repository.add_holding(db, holding)
+
+        # Atomic increment of user trade count
+        await db.execute(
+            text(
+                "UPDATE authentication.users "
+                "SET trades_count = trades_count + 1 WHERE id = :user_id"
+            ),
+            {"user_id": user_id},
+        )
+        await db.commit()
 
         return PortfolioHoldingResponse(
             id=saved_holding.id,

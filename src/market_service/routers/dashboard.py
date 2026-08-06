@@ -36,7 +36,7 @@ async def analyze_stock(
 ) -> StockAnalysisResponse:
     """Secure endpoint that fetches historical data and formats it for TradingView."""
     chart_data = await service.get_historical_data(symbol, period="1mo")
-    
+
     analysis = {}
     if chart_data:
         latest = chart_data[-1]
