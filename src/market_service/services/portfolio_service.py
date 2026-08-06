@@ -131,7 +131,8 @@ class PortfolioService:
         user_row = user_res.fetchone()
         if user_row:
             trades_count, tier = user_row[0], user_row[1]
-            if tier == "FREE" and trades_count >= 6:
+            # Fail closed: Only explicitly PRO tier is exempt from free trade limits
+            if tier != "PRO" and trades_count >= 6:
                 raise PaymentRequiredException(
                     "Free trade limit reached (6/6). Upgrade to Pro."
                 )
