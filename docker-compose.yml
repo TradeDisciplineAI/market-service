@@ -16,6 +16,7 @@ services:
     build:
       context: .
       dockerfile: Dockerfile
+      target: development
     container_name: market_app
 
     ports:
@@ -42,9 +43,13 @@ services:
     networks:
       - trading_network
 
+    dns:
+      - 8.8.8.8
+      - 1.1.1.1
+
     restart: always
 
-  celery_worker:
+  market_celery:
     build:
       context: .
       dockerfile: Dockerfile
@@ -61,9 +66,13 @@ services:
     networks:
       - trading_network
 
+    dns:
+      - 8.8.8.8
+      - 1.1.1.1
+
     restart: always
 
-  celery_beat:
+  market_celery_beat:
     build:
       context: .
       dockerfile: Dockerfile
