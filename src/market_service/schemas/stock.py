@@ -30,7 +30,8 @@ class StockAnalysisResponse(BaseModel):
     authorized: bool
     chart_data: list[TradingViewCandle]
     analysis: dict[str, str]
-    
+
+
 class StockIndicators(BaseModel):
     symbol: str
     rsi: float | None = None
