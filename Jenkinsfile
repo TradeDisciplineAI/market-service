@@ -126,7 +126,7 @@ pipeline {
                     echo 'Verifying code formatting layout...'
                     echo 'Executing: ruff format --check'
                 }
-                sh "docker compose run --rm ${env.APP_SERVICE} uv run ruff format --check src tests"
+                sh "docker compose -f docker-compose.yml run --rm ${env.APP_SERVICE} uv run ruff format --check src tests"
                 script {
                     echo 'Code formatting validation succeeded.'
                 }
@@ -138,9 +138,9 @@ pipeline {
                 script {
                     echo '=== STAGE: Ruff Lint ==='
                     echo 'Running linter, import sorter, and security checks...'
-                    echo 'Executing: ruff check (generating ruff-log.txt)'
+                    echo 'Executing: ruff check (generating ruff-log.txt in pylint format)'
                     try {
-                        sh "docker compose run --name market_ruff_${env.BUILD_NUMBER} ${env.APP_SERVICE} uv run ruff check --output-file=${env.REPORTS_DIR}/ruff-log.txt src tests"
+                        sh "docker compose -f docker-compose.yml run --name market_ruff_${env.BUILD_NUMBER} ${env.APP_SERVICE} uv run ruff check --output-format=pylint --output-file=${env.REPORTS_DIR}/ruff-log.txt src tests"
                     } finally {
                         sh "docker cp market_ruff_${env.BUILD_NUMBER}:/app/${env.REPORTS_DIR}/ruff-log.txt ${env.WORKSPACE}/${env.REPORTS_DIR}/ruff-log.txt || true"
                         sh "docker rm -f market_ruff_${env.BUILD_NUMBER} || true"
@@ -157,7 +157,7 @@ pipeline {
                     echo 'Executing strict type check checks...'
                     echo 'Executing: mypy src (generating mypy-log.txt)'
                     try {
-                        sh "docker compose run --name market_mypy_${env.BUILD_NUMBER} ${env.APP_SERVICE} bash -c 'set -o pipefail && uv run mypy src | tee ${env.REPORTS_DIR}/mypy-log.txt'"
+                        sh "docker compose -f docker-compose.yml run --name market_mypy_${env.BUILD_NUMBER} ${env.APP_SERVICE} bash -c 'set -o pipefail && uv run mypy src | tee ${env.REPORTS_DIR}/mypy-log.txt'"
                     } finally {
                         sh "docker cp market_mypy_${env.BUILD_NUMBER}:/app/${env.REPORTS_DIR}/mypy-log.txt ${env.WORKSPACE}/${env.REPORTS_DIR}/mypy-log.txt || true"
                         sh "docker rm -f market_mypy_${env.BUILD_NUMBER} || true"
@@ -173,12 +173,12 @@ pipeline {
                     echo '=== STAGE: Semgrep Security Scan ==='
                     echo 'Starting security scan...'
                     echo 'Checking Semgrep version...'
-                    sh "docker compose run --rm ${env.APP_SERVICE} uv run semgrep --version"
+                    sh "docker compose -f docker-compose.yml run --rm ${env.APP_SERVICE} uv run semgrep --version"
                     echo 'Configuration: --config=auto'
                     echo 'Output Format: SARIF'
                     echo "Report Location: ${env.REPORTS_DIR}/semgrep.sarif"
                     try {
-                        sh "docker compose run --name market_semgrep_${env.BUILD_NUMBER} ${env.APP_SERVICE} uv run semgrep --config=auto --sarif --output=${env.REPORTS_DIR}/semgrep.sarif || true"
+                        sh "docker compose -f docker-compose.yml run --name market_semgrep_${env.BUILD_NUMBER} ${env.APP_SERVICE} uv run semgrep --config=auto --sarif --output=${env.REPORTS_DIR}/semgrep.sarif || true"
                     } finally {
                         sh "docker cp market_semgrep_${env.BUILD_NUMBER}:/app/${env.REPORTS_DIR}/semgrep.sarif ${env.WORKSPACE}/${env.REPORTS_DIR}/semgrep.sarif || true"
                         sh "docker rm -f market_semgrep_${env.BUILD_NUMBER} || true"
@@ -305,7 +305,7 @@ pipeline {
                     echo 'Running Alembic upgrade head checks...'
                     echo 'Executing: alembic upgrade head'
                 }
-                sh "docker compose run --rm -e DATABASE_URL=${env.TEST_DATABASE_URL} ${env.APP_SERVICE} uv run alembic upgrade head"
+                sh "docker compose -f docker-compose.yml run --rm -e DATABASE_URL=${env.TEST_DATABASE_URL} ${env.APP_SERVICE} uv run alembic upgrade head"
                 script {
                     echo 'Database migration validation completed successfully.'
                 }
@@ -318,7 +318,7 @@ pipeline {
                     echo '=== STAGE: Execute Pytest Suite ==='
                     echo 'Running pytest test cases and generating coverage...'
                     try {
-                        sh "docker compose run --name market_pytest_${env.BUILD_NUMBER} -e TEST_DATABASE_URL=${env.TEST_DATABASE_URL} -e DATABASE_URL=${env.TEST_DATABASE_URL} ${env.APP_SERVICE} uv run pytest --junitxml=${env.REPORTS_DIR}/junit.xml --cov-report=xml:${env.REPORTS_DIR}/coverage.xml --cov-report=html:${env.REPORTS_DIR}/htmlcov"
+                        sh "docker compose -f docker-compose.yml run --name market_pytest_${env.BUILD_NUMBER} -e TEST_DATABASE_URL=${env.TEST_DATABASE_URL} -e DATABASE_URL=${env.TEST_DATABASE_URL} ${env.APP_SERVICE} uv run pytest --junitxml=${env.REPORTS_DIR}/junit.xml --cov-report=xml:${env.REPORTS_DIR}/coverage.xml --cov-report=html:${env.REPORTS_DIR}/htmlcov"
                     } finally {
                         sh "docker cp market_pytest_${env.BUILD_NUMBER}:/app/${env.REPORTS_DIR}/. ${env.WORKSPACE}/${env.REPORTS_DIR}/ || true"
                         sh "docker rm -f market_pytest_${env.BUILD_NUMBER} || true"
@@ -419,7 +419,7 @@ pipeline {
 
                 // Tear down compose projects to delete containers, networks, and volumes
                 echo "Tearing down application compose project: ${env.COMPOSE_PROJECT_NAME}..."
-                sh "docker compose -p ${env.COMPOSE_PROJECT_NAME} down -v || true"
+                sh "docker compose -f docker-compose.yml -p ${env.COMPOSE_PROJECT_NAME} down -v || true"
 
                 // Keep the shared infrastructure running across builds to prevent resource recreation
                 echo "Shared infrastructure project 'trading_infra' remains running."
@@ -429,7 +429,7 @@ pipeline {
                 if (fileExists("${env.REPORTS_DIR}/ruff-log.txt")) {
                     recordIssues(
                         enabledForFailure: true,
-                        tools: [ruff(pattern: "${env.REPORTS_DIR}/ruff-log.txt", id: 'ruff', name: 'Ruff Lint')]
+                        tools: [pyLint(pattern: "${env.REPORTS_DIR}/ruff-log.txt", id: 'ruff', name: 'Ruff Lint')]
                     )
                 } else {
                     echo "WARNING: Ruff lint report is missing!"
