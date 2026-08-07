@@ -7,7 +7,7 @@ from market_service.core.config import get_settings
 # settings and the SQLAlchemy test engine always point at the same host.
 _TEST_DB_URL = os.getenv(
     "TEST_DATABASE_URL",
-    "postgresql+asyncpg://postgres:postgres@localhost:5434/market_test_db",
+    "postgresql+asyncpg://postgres:postgres@localhost:5434/trading_test_db",
 )
 os.environ["TEST_DATABASE_URL"] = _TEST_DB_URL
 os.environ["DATABASE_URL"] = _TEST_DB_URL
