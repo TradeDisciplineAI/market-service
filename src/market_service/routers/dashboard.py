@@ -2,11 +2,10 @@ import asyncio
 import logging
 from typing import Any
 
-from fastapi import APIRouter, Query, WebSocket, WebSocketDisconnect, status
+from fastapi import APIRouter, Query, WebSocket, WebSocketDisconnect
 
 from market_service.core.dependencies import CurrentUserDep
 from market_service.core.redis import get_market_analysis
-from market_service.core.security import decode_access_token
 from market_service.core.websocket_manager import manager
 from market_service.schemas.gainers import GainerStock
 from market_service.schemas.stock import (
@@ -95,11 +94,10 @@ async def websocket_market_endpoint(
     websocket: WebSocket,
     token: str | None = Query(None),
 ) -> None:
-    """Authenticated real-time WebSocket endpoint streaming market data."""
-    if not token or decode_access_token(token) is None:
-        await websocket.close(code=status.WS_1008_POLICY_VIOLATION)
-        return
+    """Real-time WebSocket endpoint streaming market data.
 
+    Authentication is optional for guest access.
+    """
     await manager.connect(websocket)
     try:
         while True:
