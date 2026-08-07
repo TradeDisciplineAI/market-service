@@ -1,9 +1,11 @@
 import asyncio
 import logging
 from contextlib import suppress
+
 import pandas_ta as ta
-from market_service.schemas.stock import StockIndicators
 import yfinance as yf
+
+from market_service.schemas.stock import StockIndicators
 
 with suppress(Exception):
     yf.set_tz_cache_location("/tmp/py-yfinance")  # noqa: S108
@@ -190,10 +192,12 @@ class YFinanceService:
         ticker = yf.Ticker(symbol)
         history = ticker.history(period="6mo")
         if history.empty:
-            return StockIndicators(symbol=symbol, rsi=None, macd=None, sma_20=None, sma_50=None)
+            return StockIndicators(
+                symbol=symbol, rsi=None, macd=None, sma_20=None, sma_50=None
+            )
 
         close = history["Close"]
-        
+
         rsi = ta.rsi(close, length=14)
         macd = ta.macd(close)
         sma_20 = ta.sma(close, length=20)
@@ -201,10 +205,20 @@ class YFinanceService:
 
         return StockIndicators(
             symbol=symbol,
-            rsi=float(rsi.iloc[-1]) if rsi is not None and not rsi.empty and not rsi.isna().iloc[-1] else None,
-            macd=float(macd["MACD_12_26_9"].iloc[-1]) if macd is not None and not macd.empty and not macd["MACD_12_26_9"].isna().iloc[-1] else None,
-            sma_20=float(sma_20.iloc[-1]) if sma_20 is not None and not sma_20.empty and not sma_20.isna().iloc[-1] else None,
-            sma_50=float(sma_50.iloc[-1]) if sma_50 is not None and not sma_50.empty and not sma_50.isna().iloc[-1] else None,
+            rsi=float(rsi.iloc[-1])
+            if rsi is not None and not rsi.empty and not rsi.isna().iloc[-1]
+            else None,
+            macd=float(macd["MACD_12_26_9"].iloc[-1])
+            if macd is not None
+            and not macd.empty
+            and not macd["MACD_12_26_9"].isna().iloc[-1]
+            else None,
+            sma_20=float(sma_20.iloc[-1])
+            if sma_20 is not None and not sma_20.empty and not sma_20.isna().iloc[-1]
+            else None,
+            sma_50=float(sma_50.iloc[-1])
+            if sma_50 is not None and not sma_50.empty and not sma_50.isna().iloc[-1]
+            else None,
         )
 
     async def get_stock_indicators(self, symbol: str) -> StockIndicators:
@@ -212,4 +226,6 @@ class YFinanceService:
             return await asyncio.to_thread(self._fetch_stock_indicators_sync, symbol)
         except Exception:
             logger.exception("Failed to calculate stock indicators for %s", symbol)
-            return StockIndicators(symbol=symbol, rsi=None, macd=None, sma_20=None, sma_50=None)
+            return StockIndicators(
+                symbol=symbol, rsi=None, macd=None, sma_20=None, sma_50=None
+            )
