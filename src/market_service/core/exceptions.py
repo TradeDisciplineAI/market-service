@@ -52,6 +52,13 @@ class UnprocessableEntityException(AppException):
         super().__init__(detail=detail, status_code=422)
 
 
+class PaymentRequiredException(AppException):
+    """402 — Subscription upgrade or payment required."""
+
+    def __init__(self, detail: str = "Subscription required") -> None:
+        super().__init__(detail=detail, status_code=402)
+
+
 class InternalServerException(AppException):
     """500 — Unexpected server-side failure."""
 
