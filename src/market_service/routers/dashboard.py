@@ -3,7 +3,7 @@ import logging
 from typing import Any
 
 from fastapi import APIRouter, Query, WebSocket, WebSocketDisconnect, status
-
+from market_service.schemas.stock import StockIndicators
 from market_service.core.dependencies import CurrentUserDep
 from market_service.core.redis import get_market_analysis
 from market_service.core.security import decode_access_token
@@ -109,3 +109,7 @@ async def websocket_market_endpoint(
         manager.disconnect(websocket)
     except Exception:
         manager.disconnect(websocket)
+@router.get("/indicators/{symbol}", response_model=StockIndicators)
+async def get_indicators(symbol: str) -> StockIndicators:
+    """Calculates and returns technical indicators for a given stock."""
+    return await service.get_stock_indicators(symbol)
