@@ -15,8 +15,8 @@ pipeline {
         CI                   = 'true'
         REPORTS_DIR          = 'reports'
         COMPOSE_PROJECT_NAME = "market_ci_${env.BUILD_NUMBER}"
-        TEST_DATABASE_URL    = 'postgresql+asyncpg://postgres:postgres@shared_test_db:5432/market_test_db'
-        DATABASE_URL         = 'postgresql+asyncpg://postgres:postgres@shared_test_db:5432/market_test_db'
+        TEST_DATABASE_URL    = 'postgresql+asyncpg://postgres:postgres@shared_test_db:5432/trading_test_db'
+        DATABASE_URL         = 'postgresql+asyncpg://postgres:postgres@shared_test_db:5432/trading_test_db'
         SECRET_KEY           = 'ci-dummy-secret-key-32-characters-minimum'
         PROD_IMAGE_TAG       = "market-service:ci-${env.BUILD_NUMBER}"
     }

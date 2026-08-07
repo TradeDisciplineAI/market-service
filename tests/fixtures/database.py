@@ -19,7 +19,7 @@ logger = logging.getLogger(__name__)
 # Single source of truth — conftest.py sets TEST_DATABASE_URL before any fixture runs.
 LOCAL_TEST_DB = os.getenv(
     "TEST_DATABASE_URL",
-    "postgresql+asyncpg://postgres:postgres@localhost:5434/market_test_db",
+    "postgresql+asyncpg://postgres:postgres@localhost:5434/trading_test_db",
 )
 parsed = urlsplit(LOCAL_TEST_DB)
 TEST_DATABASE_URL = LOCAL_TEST_DB
