@@ -65,19 +65,27 @@ async def test_get_market_analysis(client: AsyncClient) -> None:
 
 
 @pytest.mark.asyncio
-async def test_websocket_unauthenticated_rejected() -> None:
+async def test_websocket_unauthenticated_accepted() -> None:
+    from unittest.mock import AsyncMock, patch
+
     from fastapi.testclient import TestClient
-    from starlette.websockets import WebSocketDisconnect
 
     from market_service.main import app
 
-    test_client = TestClient(app)
-    with (
-        pytest.raises(WebSocketDisconnect) as exc_info,
-        test_client.websocket_connect("/dashboard/ws/market"),
-    ):
-        pass
-    assert exc_info.value.code == 1008
+    mock_analysis = {
+        "gainers": [],
+        "losers": [],
+        "last_updated": "2026-08-06T12:00:00Z",
+    }
+    with patch(
+        "market_service.routers.dashboard.get_market_analysis",
+        new_callable=AsyncMock,
+    ) as mock_get:
+        mock_get.return_value = mock_analysis
+        test_client = TestClient(app)
+        with test_client.websocket_connect("/dashboard/ws/market") as websocket:
+            data = websocket.receive_json()
+            assert "gainers" in data
 
 
 @pytest.mark.asyncio

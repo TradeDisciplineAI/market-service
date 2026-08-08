@@ -28,7 +28,7 @@ pipeline {
                     echo '=== STAGE: Checkout ==='
                     echo 'Checking out code from version control...'
                 }
-                checkout scm
+                git branch: env.BRANCH_NAME, url: 'https://github.com/TradeDisciplineAI/market-service.git'
                 script {
                     echo 'Checking out shared infrastructure repository...'
                     checkout([
@@ -142,7 +142,10 @@ pipeline {
                     try {
                         sh "docker compose -f docker-compose.yml run --name market_ruff_${env.BUILD_NUMBER} ${env.APP_SERVICE} uv run ruff check --output-format=pylint --output-file=${env.REPORTS_DIR}/ruff-log.txt src tests"
                     } finally {
-                        sh "docker cp market_ruff_${env.BUILD_NUMBER}:/app/${env.REPORTS_DIR}/ruff-log.txt ${env.WORKSPACE}/${env.REPORTS_DIR}/ruff-log.txt || true"
+                        sh """
+                            mkdir -p "${env.WORKSPACE}/${env.REPORTS_DIR}"
+                            docker cp "market_ruff_${env.BUILD_NUMBER}:/app/${env.REPORTS_DIR}/ruff-log.txt" "${env.WORKSPACE}/${env.REPORTS_DIR}/ruff-log.txt"
+                        """
                         sh "docker rm -f market_ruff_${env.BUILD_NUMBER} || true"
                     }
                     echo 'Ruff linting checks completed successfully.'
@@ -159,7 +162,10 @@ pipeline {
                     try {
                         sh "docker compose -f docker-compose.yml run --name market_mypy_${env.BUILD_NUMBER} ${env.APP_SERVICE} bash -c 'set -o pipefail && uv run mypy src | tee ${env.REPORTS_DIR}/mypy-log.txt'"
                     } finally {
-                        sh "docker cp market_mypy_${env.BUILD_NUMBER}:/app/${env.REPORTS_DIR}/mypy-log.txt ${env.WORKSPACE}/${env.REPORTS_DIR}/mypy-log.txt || true"
+                        sh """
+                            mkdir -p "${env.WORKSPACE}/${env.REPORTS_DIR}"
+                            docker cp "market_mypy_${env.BUILD_NUMBER}:/app/${env.REPORTS_DIR}/mypy-log.txt" "${env.WORKSPACE}/${env.REPORTS_DIR}/mypy-log.txt"
+                        """
                         sh "docker rm -f market_mypy_${env.BUILD_NUMBER} || true"
                     }
                     echo 'MyPy type checking checks completed successfully.'
@@ -180,7 +186,10 @@ pipeline {
                     try {
                         sh "docker compose -f docker-compose.yml run --name market_semgrep_${env.BUILD_NUMBER} ${env.APP_SERVICE} uv run semgrep --config=auto --sarif --output=${env.REPORTS_DIR}/semgrep.sarif || true"
                     } finally {
-                        sh "docker cp market_semgrep_${env.BUILD_NUMBER}:/app/${env.REPORTS_DIR}/semgrep.sarif ${env.WORKSPACE}/${env.REPORTS_DIR}/semgrep.sarif || true"
+                        sh """
+                            mkdir -p "${env.WORKSPACE}/${env.REPORTS_DIR}"
+                            docker cp "market_semgrep_${env.BUILD_NUMBER}:/app/${env.REPORTS_DIR}/semgrep.sarif" "${env.WORKSPACE}/${env.REPORTS_DIR}/semgrep.sarif"
+                        """
                         sh "docker rm -f market_semgrep_${env.BUILD_NUMBER} || true"
                     }
                     echo 'Semgrep security scan completed.'
@@ -320,7 +329,10 @@ pipeline {
                     try {
                         sh "docker compose -f docker-compose.yml run --name market_pytest_${env.BUILD_NUMBER} -e TEST_DATABASE_URL=${env.TEST_DATABASE_URL} -e DATABASE_URL=${env.TEST_DATABASE_URL} ${env.APP_SERVICE} uv run pytest --junitxml=${env.REPORTS_DIR}/junit.xml --cov-report=xml:${env.REPORTS_DIR}/coverage.xml --cov-report=html:${env.REPORTS_DIR}/htmlcov"
                     } finally {
-                        sh "docker cp market_pytest_${env.BUILD_NUMBER}:/app/${env.REPORTS_DIR}/. ${env.WORKSPACE}/${env.REPORTS_DIR}/ || true"
+                        sh """
+                            mkdir -p "${env.WORKSPACE}/${env.REPORTS_DIR}"
+                            docker cp "market_pytest_${env.BUILD_NUMBER}:/app/${env.REPORTS_DIR}/." "${env.WORKSPACE}/${env.REPORTS_DIR}/"
+                        """
                         sh "docker rm -f market_pytest_${env.BUILD_NUMBER} || true"
                     }
                     echo 'Pytest suite executed successfully.'
