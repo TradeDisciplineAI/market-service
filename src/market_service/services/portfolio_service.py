@@ -15,6 +15,8 @@ from market_service.models.portfolio import Portfolio
 from market_service.models.portfolio_holding import PortfolioHolding
 from market_service.repositories.portfolio_repository import PortfolioRepository
 from market_service.schemas.portfolio import (
+    PaperPositionCreate,
+    PaperPositionResponse,
     PortfolioCreate,
     PortfolioHoldingCreate,
     PortfolioHoldingResponse,
@@ -33,7 +35,7 @@ class PortfolioService:
         db: AsyncSession,
         user_id: uuid.UUID,
         portfolio_in: PortfolioCreate,
-    ) -> Portfolio:
+    ) -> PortfolioResponse:
         existing = await self.repository.get_portfolio_by_user(db, user_id)
         if existing:
             raise ConflictException("User already has a portfolio")
@@ -41,8 +43,33 @@ class PortfolioService:
         portfolio = Portfolio(
             user_id=user_id,
             name=portfolio_in.name,
+            type=portfolio_in.type or "PAPER",
         )
-        return await self.repository.create_portfolio(db, portfolio)
+        created = await self.repository.create_portfolio(db, portfolio)
+
+        positions_models = [
+            PaperPositionResponse(
+                id=p.id,
+                portfolio_id=p.portfolio_id,
+                symbol=p.symbol,
+                quantity=p.quantity,
+                average_entry_price=float(p.average_entry_price),
+                created_at=p.created_at,
+                updated_at=p.updated_at,
+            )
+            for p in getattr(created, "paper_positions", []) or []
+        ]
+
+        return PortfolioResponse(
+            id=created.id,
+            user_id=created.user_id,
+            name=created.name,
+            type=getattr(created, "type", "PAPER"),
+            holdings=[],
+            positions=positions_models,
+            created_at=created.created_at,
+            updated_at=created.updated_at,
+        )
 
     async def get_portfolio(
         self,
@@ -87,13 +114,93 @@ class PortfolioService:
                 )
                 enriched_holdings.append(holding_model)
 
+        positions_models = [
+            PaperPositionResponse(
+                id=p.id,
+                portfolio_id=p.portfolio_id,
+                symbol=p.symbol,
+                quantity=p.quantity,
+                average_entry_price=float(p.average_entry_price),
+                created_at=p.created_at,
+                updated_at=p.updated_at,
+            )
+            for p in getattr(portfolio, "paper_positions", []) or []
+        ]
+
         return PortfolioResponse(
             id=portfolio.id,
             user_id=portfolio.user_id,
             name=portfolio.name,
+            type=getattr(portfolio, "type", "PAPER"),
             holdings=enriched_holdings,
+            positions=positions_models,
             created_at=portfolio.created_at,
             updated_at=portfolio.updated_at,
+        )
+
+    async def get_positions(
+        self,
+        db: AsyncSession,
+        user_id: uuid.UUID,
+        portfolio_id: uuid.UUID,
+    ) -> list[PaperPositionResponse]:
+        portfolio = await self.repository.get_portfolio_by_id(db, portfolio_id)
+        if not portfolio:
+            raise NotFoundException("Portfolio not found")
+
+        if portfolio.user_id != user_id:
+            raise ForbiddenException("You do not own this portfolio")
+
+        positions = await self.repository.get_positions_by_portfolio(db, portfolio_id)
+        return [
+            PaperPositionResponse(
+                id=p.id,
+                portfolio_id=p.portfolio_id,
+                symbol=p.symbol,
+                quantity=p.quantity,
+                average_entry_price=float(p.average_entry_price),
+                created_at=p.created_at,
+                updated_at=p.updated_at,
+            )
+            for p in positions
+        ]
+
+    async def add_or_update_position(
+        self,
+        db: AsyncSession,
+        user_id: uuid.UUID,
+        portfolio_id: uuid.UUID,
+        position_in: PaperPositionCreate,
+    ) -> PaperPositionResponse:
+        portfolio = await self.repository.get_portfolio_by_id(db, portfolio_id)
+        if not portfolio:
+            raise NotFoundException("Portfolio not found")
+
+        if portfolio.user_id != user_id:
+            raise ForbiddenException("You do not own this portfolio")
+
+        if position_in.quantity <= 0:
+            raise BadRequestException("quantity must be greater than zero")
+
+        if position_in.average_entry_price <= 0:
+            raise BadRequestException("average_entry_price must be greater than zero")
+
+        pos = await self.repository.add_or_update_paper_position(
+            db,
+            portfolio_id,
+            position_in.symbol.strip().upper(),
+            position_in.quantity,
+            position_in.average_entry_price,
+        )
+
+        return PaperPositionResponse(
+            id=pos.id,
+            portfolio_id=pos.portfolio_id,
+            symbol=pos.symbol,
+            quantity=pos.quantity,
+            average_entry_price=float(pos.average_entry_price),
+            created_at=pos.created_at,
+            updated_at=pos.updated_at,
         )
 
     async def add_holding(
@@ -118,7 +225,6 @@ class PortfolioService:
         if len(portfolio.holdings) >= 5:
             raise BadRequestException("Portfolio cannot contain more than 5 stocks")
 
-        # Verify 6-trade free limit
         from sqlalchemy import text
 
         user_res = await db.execute(
@@ -131,7 +237,6 @@ class PortfolioService:
         user_row = user_res.fetchone()
         if user_row:
             trades_count, tier = user_row[0], user_row[1]
-            # Fail closed: Only explicitly PRO tier is exempt from free trade limits
             if tier != "PRO" and trades_count >= 6:
                 raise PaymentRequiredException(
                     "Free trade limit reached (6/6). Upgrade to Pro."
@@ -151,7 +256,6 @@ class PortfolioService:
         )
         saved_holding = await self.repository.add_holding(db, holding)
 
-        # Atomic increment of user trade count
         await db.execute(
             text(
                 "UPDATE authentication.users "

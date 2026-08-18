@@ -22,15 +22,38 @@ class PortfolioHoldingResponse(BaseModel):
     }
 
 
+class PaperPositionCreate(BaseModel):
+    symbol: str = Field(..., min_length=1, max_length=20)
+    quantity: int = Field(..., gt=0)
+    average_entry_price: float = Field(..., gt=0.0)
+
+
+class PaperPositionResponse(BaseModel):
+    id: uuid.UUID
+    portfolio_id: uuid.UUID
+    symbol: str
+    quantity: int
+    average_entry_price: float
+    created_at: datetime
+    updated_at: datetime
+
+    model_config = {
+        "from_attributes": True,
+    }
+
+
 class PortfolioCreate(BaseModel):
-    name: str = Field(..., min_length=1, max_length=100)
+    name: str = Field(default="My Paper Portfolio", min_length=1, max_length=100)
+    type: str = Field(default="PAPER")
 
 
 class PortfolioResponse(BaseModel):
     id: uuid.UUID
     user_id: uuid.UUID
     name: str
-    holdings: list[PortfolioHoldingResponse]
+    type: str = "PAPER"
+    holdings: list[PortfolioHoldingResponse] = Field(default_factory=list)
+    positions: list[PaperPositionResponse] = Field(default_factory=list)
     created_at: datetime
     updated_at: datetime
 
