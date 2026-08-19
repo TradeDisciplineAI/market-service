@@ -8,6 +8,7 @@ from sqlalchemy.orm import selectinload
 from market_service.models.paper_position import PaperPosition
 from market_service.models.portfolio import Portfolio
 from market_service.models.portfolio_holding import PortfolioHolding
+from market_service.core.exceptions import UnprocessableEntityException
 
 
 class PortfolioRepository:
@@ -131,3 +132,66 @@ class PortfolioRepository:
         )
         result = await db.execute(stmt)
         return cast(list[PortfolioHolding], list(result.scalars().all()))
+
+    async def merge_paper_position(
+        self,
+        db: AsyncSession,
+        portfolio_id: uuid.UUID,
+        symbol: str,
+        action: str,
+        quantity: int,
+        price: float,
+    ) -> PaperPosition | None:
+        stmt = select(PaperPosition).where(
+            PaperPosition.portfolio_id == portfolio_id,
+            PaperPosition.symbol == symbol,
+        )
+        res = await db.execute(stmt)
+        existing = res.scalar_one_or_none()
+
+        action_upper = action.upper()
+        if action_upper == "BUY":
+            if not existing:
+                pos = PaperPosition(
+                    portfolio_id=portfolio_id,
+                    symbol=symbol,
+                    quantity=quantity,
+                    average_entry_price=price,
+                )
+                db.add(pos)
+                await db.flush()
+                return pos
+            else:
+                new_qty = existing.quantity + quantity
+                # Merge average entry price: (existing_qty * existing_price + new_qty * price) / new_qty
+                # average_entry_price is Decimal/Numeric type, cast to float for calculation then back
+                new_avg = (
+                    (existing.quantity * float(existing.average_entry_price))
+                    + (quantity * price)
+                ) / new_qty
+                existing.quantity = new_qty
+                existing.average_entry_price = new_avg
+                await db.flush()
+                return existing
+
+        elif action_upper == "SELL":
+            if not existing:
+                raise UnprocessableEntityException(
+                    "SELL order requires an existing paper position."
+                )
+            if quantity > existing.quantity:
+                raise UnprocessableEntityException(
+                    "Cannot SELL more than the available quantity."
+                )
+
+            if quantity == existing.quantity:
+                await db.delete(existing)
+                await db.flush()
+                return None
+            else:
+                existing.quantity -= quantity
+                # average_entry_price is unchanged on SELL
+                await db.flush()
+                return existing
+        else:
+            raise UnprocessableEntityException(f"Unsupported merge action: {action}")

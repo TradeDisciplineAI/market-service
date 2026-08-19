@@ -13,6 +13,7 @@ from market_service.core.database import Base
 if TYPE_CHECKING:
     from .paper_position import PaperPosition
     from .portfolio_holding import PortfolioHolding
+    from .paper_trade_execution import PaperTradeExecution
 
 
 class Portfolio(Base):
@@ -50,6 +51,12 @@ class Portfolio(Base):
 
     paper_positions: Mapped[list[PaperPosition]] = relationship(
         "PaperPosition",
+        back_populates="portfolio",
+        cascade="all, delete-orphan",
+    )
+
+    paper_trade_executions: Mapped[list[PaperTradeExecution]] = relationship(
+        "PaperTradeExecution",
         back_populates="portfolio",
         cascade="all, delete-orphan",
     )

@@ -52,6 +52,9 @@ class Settings(BaseSettings):
         "http://localhost:5175",
     ]
 
+    # Internal Secret
+    market_service_internal_secret: SecretStr = SecretStr("change-me")
+
     @field_validator("secret_key")
     @classmethod
     def secret_key_min_length(cls, v: SecretStr) -> SecretStr:
