@@ -36,7 +36,14 @@ class Settings(BaseSettings):
     log_format: str = "%(asctime)s - %(name)s - %(levelname)s - %(message)s"
 
     # Hosts
-    allowed_hosts: list[str] = ["localhost", "127.0.0.1"]
+    allowed_hosts: list[str] = [
+        "localhost",
+        "127.0.0.1",
+        "host.docker.internal",
+        "market_app",
+        "*",
+    ]
+
 
     # Market Providers, Redis & Resend Email
     finnhub_api_key: SecretStr | None = None
