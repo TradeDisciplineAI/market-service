@@ -1,0 +1,13 @@
+# ------------------ Kubernetes Namespace Definition -----------------------
+# This file creates an isolated logical space inside the Kubernetes cluster 
+# dedicated to all workloads and resources belonging to the Market Service.
+# --------------------------------------------------------------------------
+
+apiVersion: v1
+kind: Namespace
+metadata:
+  name: market-service
+  labels:
+    name: market-service
+    app.kubernetes.io/name: market-service
+    app.kubernetes.io/part-of: ai-trading-platform
