@@ -1,0 +1,39 @@
+# ------------------ Kubernetes Redis Cache Deployment -----------------------
+# Deployment manifest for internal Redis cache and Celery task broker.
+# Runs 1 replica of redis:7-alpine in the market-service namespace.
+# --------------------------------------------------------------------------
+
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: market-redis
+  namespace: market-service
+  labels:
+    app: market-service
+    component: redis
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: market-service
+      component: redis
+  template:
+    metadata:
+      labels:
+        app: market-service
+        component: redis
+    spec:
+      containers:
+        # ------------------ Lightweight Alpine Redis Container -----------------------
+        - name: redis
+          image: redis:7-alpine
+          ports:
+            - containerPort: 6379
+              name: redis
+          resources:
+            requests:
+              cpu: 100m
+              memory: 128Mi
+            limits:
+              cpu: 250m
+              memory: 256Mi

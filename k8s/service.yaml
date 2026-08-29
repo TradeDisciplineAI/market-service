@@ -1,0 +1,26 @@
+# ------------------ Kubernetes Service Definition (Market API) -----------------------
+# Exposes market-service pods to internal cluster networking.
+# Maps ClusterIP port 8001 to containerPort 8000 on market-service-app pods.
+# --------------------------------------------------------------------------
+
+apiVersion: v1
+kind: Service
+metadata:
+  name: market-service
+  namespace: market-service
+  labels:
+    app: market-service
+    component: service
+spec:
+  type: ClusterIP
+  ports:
+    # ------------------ Internal Port Mapping -----------------------
+    - port: 8001
+      targetPort: 8000
+      protocol: TCP
+      name: http
+
+  # ------------------ Target Pod Selector -----------------------
+  selector:
+    app: market-service
+    component: api

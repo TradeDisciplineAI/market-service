@@ -1,0 +1,28 @@
+# ------------------ Kubernetes ConfigMap Configuration -----------------------
+# ConfigMaps hold non-sensitive configuration key-value pairs.
+# These environment variables are injected into market-service API pods,
+# Celery worker pods, and Celery beat scheduler pods at container startup.
+# --------------------------------------------------------------------------
+
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: market-service-config
+  namespace: market-service
+  labels:
+    app: market-service
+    component: config
+data:
+  # ------------------ Application Environment Settings -----------------------
+  ENVIRONMENT: "production"
+  LOG_LEVEL: "INFO"
+  PORT: "8000"
+  HOST: "0.0.0.0"
+
+  # ------------------ Redis Internal Network Host -----------------------
+  # Matches the ClusterIP Service name defined in redis-service.yaml
+  REDIS_HOST: "market-redis"
+  REDIS_PORT: "6379"
+
+  # ------------------ Security Allowed Hosts Header -----------------------
+  ALLOWED_HOSTS: "market-service,market_app,localhost,127.0.0.1,host.docker.internal,*"
