@@ -24,17 +24,29 @@ spec:
         app: market-service
         component: celery-beat
     spec:
+      securityContext:
+        runAsNonRoot: true
+        runAsUser: 1000
       containers:
         # ------------------ Celery Beat Scheduler Process -----------------------
         - name: celery-beat
           image: market-service:latest
-          imagePullPolicy: IfNotPresent
-          command: ["celery", "-A", "market_service.core.celery", "beat", "--loglevel=info"]
+          imagePullPolicy: Never
+          securityContext:
+            runAsNonRoot: true
+            allowPrivilegeEscalation: false
+            capabilities:
+              drop:
+                - ALL
+          command: ["celery", "-A", "market_service.core.celery", "beat", "--loglevel=info", "--schedule=/tmp/celerybeat-schedule.db"]
           envFrom:
             - configMapRef:
                 name: market-service-config
             - secretRef:
                 name: market-service-secret
+          volumeMounts:
+            - name: tmp-volume
+              mountPath: /tmp
           resources:
             requests:
               cpu: 100m
@@ -42,3 +54,6 @@ spec:
             limits:
               cpu: 250m
               memory: 256Mi
+      volumes:
+        - name: tmp-volume
+          emptyDir: {}

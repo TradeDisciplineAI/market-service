@@ -25,4 +25,4 @@ data:
   REDIS_PORT: "6379"
 
   # ------------------ Security Allowed Hosts Header -----------------------
-  ALLOWED_HOSTS: "market-service,market_app,localhost,127.0.0.1,host.docker.internal,*"
+  ALLOWED_HOSTS: '["market-service","market-service.market-service.svc.cluster.local","market-service.market-service","localhost","127.0.0.1","*"]'
