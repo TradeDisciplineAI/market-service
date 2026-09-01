@@ -41,9 +41,11 @@ class Settings(BaseSettings):
         "127.0.0.1",
         "host.docker.internal",
         "market_app",
+        "market-service",
+        "market-service.market-service",
+        "market-service.market-service.svc.cluster.local",
         "*",
     ]
-
 
     # Market Providers, Redis & Resend Email
     finnhub_api_key: SecretStr | None = None

@@ -37,7 +37,7 @@ spec:
             capabilities:
               drop:
                 - ALL
-          command: ["celery", "-A", "market_service.core.celery", "worker", "--loglevel=info"]
+          command: ["celery", "-A", "market_service.core.celery.celery_app", "worker", "-Q", "market_queue", "--loglevel=info"]
           envFrom:
             - configMapRef:
                 name: market-service-config

@@ -23,6 +23,11 @@ data:
   # Matches the ClusterIP Service name defined in redis-service.yaml
   REDIS_HOST: "market-redis"
   REDIS_PORT: "6379"
+  REDIS_URL: "redis://market-redis:6379/0"
 
   # ------------------ Security Allowed Hosts Header -----------------------
-  ALLOWED_HOSTS: '["market-service","market-service.market-service.svc.cluster.local","market-service.market-service","localhost","127.0.0.1","*"]'
+  ALLOWED_HOSTS: '["localhost","127.0.0.1","market-service","market-service.market-service","market-service.market-service.svc.cluster.local"]'
+
+  # ------------------ Numba JIT Cache Setting -----------------------
+  NUMBA_DISABLE_JIT: "1"
+  NUMBA_CACHE_DIR: "/tmp"
