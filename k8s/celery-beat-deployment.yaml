@@ -30,8 +30,8 @@ spec:
       containers:
         # ------------------ Celery Beat Scheduler Process -----------------------
         - name: celery-beat
-          image: market-service:latest
-          imagePullPolicy: Never
+          image: tradingacr.azurecr.io/market-service:v1.0.0
+          imagePullPolicy: IfNotPresent
           securityContext:
             runAsNonRoot: true
             allowPrivilegeEscalation: false
