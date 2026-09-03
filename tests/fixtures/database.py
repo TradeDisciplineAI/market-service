@@ -75,15 +75,18 @@ async def db_engine() -> AsyncGenerator[AsyncEngine]:
         connect_args={"statement_cache_size": 0},
     )
 
-    async with engine.begin() as conn:
-        await conn.execute(text("CREATE SCHEMA IF NOT EXISTS market"))
-        await conn.run_sync(Base.metadata.drop_all)
-        await conn.run_sync(Base.metadata.create_all)
-        try:
-            for table in reversed(Base.metadata.sorted_tables):
-                await conn.execute(table.delete())
-        except Exception as exc:
-            logger.debug("Table truncation skipped: %s", exc)
+    try:
+        async with engine.begin() as conn:
+            await conn.execute(text("CREATE SCHEMA IF NOT EXISTS market"))
+            await conn.run_sync(Base.metadata.drop_all)
+            await conn.run_sync(Base.metadata.create_all)
+            try:
+                for table in reversed(Base.metadata.sorted_tables):
+                    await conn.execute(table.delete())
+            except Exception as exc:
+                logger.debug("Table truncation skipped: %s", exc)
+    except Exception as exc:
+        logger.debug("DB engine setup skipped (DB host unreachable): %s", exc)
 
     yield engine
     await engine.dispose()

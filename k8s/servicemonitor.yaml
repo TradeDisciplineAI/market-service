@@ -1,0 +1,17 @@
+apiVersion: monitoring.coreos.com/v1
+kind: ServiceMonitor
+metadata:
+  name: market-service-monitor
+  namespace: market-service
+  labels:
+    app: market-service
+    release: prometheus
+spec:
+  selector:
+    matchLabels:
+      app: market-service
+  endpoints:
+    - port: http
+      path: /metrics
+      interval: 15s
+      scrapeTimeout: 10s
