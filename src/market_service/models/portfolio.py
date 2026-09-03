@@ -12,8 +12,8 @@ from market_service.core.database import Base
 
 if TYPE_CHECKING:
     from .paper_position import PaperPosition
-    from .portfolio_holding import PortfolioHolding
     from .paper_trade_execution import PaperTradeExecution
+    from .portfolio_holding import PortfolioHolding
 
 
 class Portfolio(Base):

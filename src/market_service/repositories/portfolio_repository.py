@@ -5,10 +5,10 @@ from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.orm import selectinload
 
+from market_service.core.exceptions import UnprocessableEntityException
 from market_service.models.paper_position import PaperPosition
 from market_service.models.portfolio import Portfolio
 from market_service.models.portfolio_holding import PortfolioHolding
-from market_service.core.exceptions import UnprocessableEntityException
 
 
 class PortfolioRepository:
@@ -163,8 +163,9 @@ class PortfolioRepository:
                 return pos
             else:
                 new_qty = existing.quantity + quantity
-                # Merge average entry price: (existing_qty * existing_price + new_qty * price) / new_qty
-                # average_entry_price is Decimal/Numeric type, cast to float for calculation then back
+                # Merge average entry price:
+                # (existing_qty * existing_price + new_qty * price) / new_qty
+                # average_entry_price is Decimal/Numeric; cast to float then back
                 new_avg = (
                     (existing.quantity * float(existing.average_entry_price))
                     + (quantity * price)

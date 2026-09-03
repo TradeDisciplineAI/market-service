@@ -1,8 +1,8 @@
-from fastapi import APIRouter, Header, Depends, status
+from fastapi import APIRouter, Depends, Header, status
 
 from market_service.core.config import get_settings
 from market_service.core.dependencies import DbDep
-from market_service.core.exceptions import UnauthorizedException, ForbiddenException
+from market_service.core.exceptions import ForbiddenException, UnauthorizedException
 from market_service.schemas.execution import (
     PaperExecutionRequest,
     PaperExecutionResponse,

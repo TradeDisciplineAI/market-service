@@ -1,14 +1,15 @@
 import logging
+from datetime import UTC, datetime
+
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
-from datetime import datetime, timezone
 
 from market_service.core.exceptions import (
     ConflictException,
     ForbiddenException,
+    InternalServerException,
     NotFoundException,
     UnprocessableEntityException,
-    InternalServerException,
 )
 from market_service.models.paper_trade_execution import PaperTradeExecution
 from market_service.repositories.portfolio_repository import PortfolioRepository
@@ -53,7 +54,7 @@ class ExecutionService:
                 action=existing.action,
                 filled_quantity=existing.filled_quantity,
                 execution_price=float(existing.execution_price),
-                executed_at=existing.executed_at or datetime.now(timezone.utc),
+                executed_at=existing.executed_at or datetime.now(UTC),
             )
 
         # 2. Basic Input Validations
@@ -118,14 +119,15 @@ class ExecutionService:
                 db.add(execution)
                 await db.flush()
 
-                # Extract all details before commit to prevent MissingGreenlet due to expired attributes
+                # Extract all details before commit to prevent
+                # MissingGreenlet due to expired attributes
                 exec_id = execution.execution_id
                 prop_id = execution.proposal_id
                 symbol = execution.symbol
                 act = execution.action
                 qty = execution.filled_quantity
                 price = float(execution.execution_price)
-                executed_at = execution.executed_at or datetime.now(timezone.utc)
+                executed_at = execution.executed_at or datetime.now(UTC)
 
             # Commit outer transaction
             await db.commit()
@@ -154,5 +156,5 @@ class ExecutionService:
             if isinstance(e, IntegrityError) or "uq_paper_trade_execution" in str(e):
                 raise ConflictException(
                     "Duplicate execution: proposal or execution ID already executed"
-                )
+                ) from None
             raise InternalServerException(f"Paper execution failed: {e}") from e

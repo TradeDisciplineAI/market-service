@@ -1,25 +1,23 @@
-import pytest
 import uuid
-from datetime import datetime, timezone
-from unittest.mock import AsyncMock, patch, MagicMock
+from datetime import UTC, datetime
+from unittest.mock import AsyncMock, MagicMock, patch
 
+import pytest
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
-from httpx import AsyncClient
 
+from market_service.core.config import get_settings
 from market_service.core.exceptions import (
-    NotFoundException,
     ForbiddenException,
-    ConflictException,
+    NotFoundException,
     UnprocessableEntityException,
 )
-from market_service.models.portfolio import Portfolio
 from market_service.models.paper_position import PaperPosition
 from market_service.models.paper_trade_execution import PaperTradeExecution
+from market_service.models.portfolio import Portfolio
 from market_service.schemas.execution import PaperExecutionRequest
-from market_service.services.execution_service import ExecutionService
 from market_service.schemas.stock import StockQuote
-from market_service.core.config import get_settings
+from market_service.services.execution_service import ExecutionService
 
 
 @pytest.fixture
@@ -62,7 +60,7 @@ async def test_successful_buy_new_position(
     mock_quote,
     execution_service,
     sample_payload,
-):
+) -> None:
     """1. BUY creates new position successfully (unit test)"""
     db = AsyncMock(spec=AsyncSession)
 
@@ -121,7 +119,7 @@ async def test_portfolio_not_found(
     mock_quote,
     execution_service,
     sample_payload,
-):
+) -> None:
     """10. Portfolio not found (unit test)"""
     db = AsyncMock(spec=AsyncSession)
     mock_get_portfolio.return_value = None  # Portfolio doesn't exist
@@ -148,7 +146,7 @@ async def test_portfolio_ownership_failure(
     mock_quote,
     execution_service,
     sample_payload,
-):
+) -> None:
     """11. Portfolio ownership failure (unit test)"""
     db = AsyncMock(spec=AsyncSession)
 
@@ -173,7 +171,7 @@ async def test_portfolio_ownership_failure(
 
 
 @pytest.mark.asyncio
-async def test_invalid_action(execution_service, sample_payload):
+async def test_invalid_action(execution_service, sample_payload) -> None:
     """12. Invalid action (unit test)"""
     db = AsyncMock(spec=AsyncSession)
     sample_payload.action = "HOLD"
@@ -188,7 +186,7 @@ async def test_invalid_action(execution_service, sample_payload):
 
 
 @pytest.mark.asyncio
-async def test_invalid_quantity(execution_service, sample_payload):
+async def test_invalid_quantity(execution_service, sample_payload) -> None:
     """13. Invalid quantity (unit test)"""
     db = AsyncMock(spec=AsyncSession)
     sample_payload.requested_quantity = -5
@@ -203,7 +201,9 @@ async def test_invalid_quantity(execution_service, sample_payload):
 
 
 @pytest.mark.asyncio
-async def test_execution_idempotency_proposal_id(execution_service, sample_payload):
+async def test_execution_idempotency_proposal_id(
+    execution_service, sample_payload
+) -> None:
     """8. Execution idempotency by proposal_id (unit test)"""
     db = AsyncMock(spec=AsyncSession)
 
@@ -220,7 +220,7 @@ async def test_execution_idempotency_proposal_id(execution_service, sample_paylo
         stop_loss=160.0,
         take_profit=185.0,
         primary_strategy="EMACrossover",
-        executed_at=datetime.now(timezone.utc),
+        executed_at=datetime.now(UTC),
     )
 
     db_result = MagicMock()
@@ -243,7 +243,7 @@ async def test_execution_idempotency_proposal_id(execution_service, sample_paylo
 @patch("market_service.services.yfinance_service.YFinanceService.get_stock_quote")
 async def test_db_buy_merges_existing_position(
     mock_quote, db_session, execution_service
-):
+) -> None:
     """2 & 3. BUY merges existing position and calculates correct weighted-average entry price"""
     mock_quote.return_value = StockQuote(
         symbol="AAPL", current_price=100.00, change=0, percent_change=0
@@ -297,7 +297,7 @@ async def test_db_buy_merges_existing_position(
 @patch("market_service.services.yfinance_service.YFinanceService.get_stock_quote")
 async def test_db_sell_reduces_existing_position(
     mock_quote, db_session, execution_service
-):
+) -> None:
     """4. SELL reduces existing position quantity"""
     mock_quote.return_value = StockQuote(
         symbol="TSLA", current_price=250.00, change=0, percent_change=0
@@ -349,7 +349,7 @@ async def test_db_sell_reduces_existing_position(
 @patch("market_service.services.yfinance_service.YFinanceService.get_stock_quote")
 async def test_db_sell_closes_position_exactly_at_zero(
     mock_quote, db_session, execution_service
-):
+) -> None:
     """5. SELL closes position exactly at zero (deletes position row)"""
     mock_quote.return_value = StockQuote(
         symbol="TSLA", current_price=250.00, change=0, percent_change=0
@@ -397,7 +397,7 @@ async def test_db_sell_closes_position_exactly_at_zero(
 @patch("market_service.services.yfinance_service.YFinanceService.get_stock_quote")
 async def test_db_sell_without_position_rejected(
     mock_quote, db_session, execution_service
-):
+) -> None:
     """6. SELL without position is rejected"""
     mock_quote.return_value = StockQuote(
         symbol="MSFT", current_price=400.00, change=0, percent_change=0
@@ -432,7 +432,7 @@ async def test_db_sell_without_position_rejected(
 @patch("market_service.services.yfinance_service.YFinanceService.get_stock_quote")
 async def test_db_sell_exceeding_position_quantity_rejected(
     mock_quote, db_session, execution_service
-):
+) -> None:
     """7. SELL exceeding position quantity is rejected"""
     mock_quote.return_value = StockQuote(
         symbol="MSFT", current_price=400.00, change=0, percent_change=0
@@ -474,7 +474,7 @@ async def test_db_sell_exceeding_position_quantity_rejected(
 
 @pytest.mark.asyncio
 @patch("market_service.services.yfinance_service.YFinanceService.get_stock_quote")
-async def test_api_requires_internal_secret(mock_quote, client, db_session):
+async def test_api_requires_internal_secret(mock_quote, client, db_session) -> None:
     """19. Internal endpoint requires X-Internal-Secret"""
     mock_quote.return_value = StockQuote(
         symbol="AAPL", current_price=175.50, change=0, percent_change=0
@@ -501,7 +501,7 @@ async def test_api_requires_internal_secret(mock_quote, client, db_session):
 
 @pytest.mark.asyncio
 @patch("market_service.services.yfinance_service.YFinanceService.get_stock_quote")
-async def test_api_incorrect_secret_rejected(mock_quote, client, db_session):
+async def test_api_incorrect_secret_rejected(mock_quote, client, db_session) -> None:
     """20. Incorrect internal secret is rejected"""
     mock_quote.return_value = StockQuote(
         symbol="AAPL", current_price=175.50, change=0, percent_change=0
@@ -532,7 +532,7 @@ async def test_api_incorrect_secret_rejected(mock_quote, client, db_session):
 
 @pytest.mark.asyncio
 @patch("market_service.services.yfinance_service.YFinanceService.get_stock_quote")
-async def test_api_successful_execution(mock_quote, client, db_session):
+async def test_api_successful_execution(mock_quote, client, db_session) -> None:
     """14, 15 & 16. API successful execution, price is fetched, quantity is filled and execution is persisted"""
     mock_quote.return_value = StockQuote(
         symbol="AAPL", current_price=180.00, change=0, percent_change=0
@@ -589,7 +589,7 @@ async def test_api_successful_execution(mock_quote, client, db_session):
 @patch("market_service.services.yfinance_service.YFinanceService.get_stock_quote")
 async def test_db_transaction_rollback_on_position_failure(
     mock_quote, db_session, execution_service
-):
+) -> None:
     """17 & 18. Position and Execution are atomic, and rollback happens on position failure"""
     # Force YFinance quote to fail, causing execute_paper_trade to fail
     mock_quote.return_value = None  # None causes validation failure
