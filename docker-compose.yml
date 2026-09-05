@@ -12,15 +12,15 @@
 # =============================================================================
 
 services:
-  app:
+  market_app:
     build:
       context: .
       dockerfile: Dockerfile
+      target: development
     container_name: market_app
 
     ports:
       - "8001:8000"
-
     command: ["uvicorn", "market_service.main:app", "--host", "0.0.0.0", "--port", "8000"]
 
     environment:
@@ -32,19 +32,25 @@ services:
       - SECRET_KEY=${SECRET_KEY}
       - ALGORITHM=HS256
 
-      - DATABASE_URL=postgresql+asyncpg://postgres:${POSTGRES_PASSWORD}@shared_db:5432/trading_db
+      - DATABASE_URL=${DATABASE_URL}
       - REDIS_URL=redis://shared_redis:6379/0
 
       - FINNHUB_API_KEY=${FINNHUB_API_KEY:-}
 
       - ALLOWED_ORIGINS=["http://localhost:3000","http://localhost:8000","http://localhost:5173","http://localhost:5175"]
+      - ALLOWED_HOSTS=["localhost","127.0.0.1","host.docker.internal","market_app","*"]
+
 
     networks:
       - trading_network
 
+    dns:
+      - 8.8.8.8
+      - 1.1.1.1
+
     restart: always
 
-  celery_worker:
+  market_celery:
     build:
       context: .
       dockerfile: Dockerfile
@@ -54,16 +60,20 @@ services:
 
     environment:
       - REDIS_URL=redis://shared_redis:6379/0
-      - DATABASE_URL=postgresql+asyncpg://postgres:${POSTGRES_PASSWORD}@shared_db:5432/trading_db
+      - DATABASE_URL=${DATABASE_URL}
       - SECRET_KEY=${SECRET_KEY}
       - FINNHUB_API_KEY=${FINNHUB_API_KEY:-}
 
     networks:
       - trading_network
 
+    dns:
+      - 8.8.8.8
+      - 1.1.1.1
+
     restart: always
 
-  celery_beat:
+  market_celery_beat:
     build:
       context: .
       dockerfile: Dockerfile
@@ -74,7 +84,7 @@ services:
 
     environment:
       - REDIS_URL=redis://shared_redis:6379/0
-      - DATABASE_URL=postgresql+asyncpg://postgres:${POSTGRES_PASSWORD}@shared_db:5432/trading_db
+      - DATABASE_URL=${DATABASE_URL}
       - SECRET_KEY=${SECRET_KEY}
       - FINNHUB_API_KEY=${FINNHUB_API_KEY:-}
 

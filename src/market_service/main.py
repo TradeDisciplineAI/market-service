@@ -6,12 +6,17 @@ from fastapi import FastAPI, Request
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.middleware.trustedhost import TrustedHostMiddleware
 from fastapi.responses import JSONResponse
+from prometheus_fastapi_instrumentator import Instrumentator
 from slowapi import _rate_limit_exceeded_handler
 from slowapi.errors import RateLimitExceeded
 
 from .core.config import get_settings
 from .core.exceptions import AppException
 from .core.limiter import limiter
+from .routers.alerts import router as alerts_router
+from .routers.dashboard import router as dashboard_router
+from .routers.portfolio import router as portfolio_router
+from .routers.internal import router as internal_router
 
 settings = get_settings()
 
@@ -26,15 +31,16 @@ app = FastAPI(
     title=settings.app_name,
     version=settings.app_version,
     description="Market Service microservice.",
-    # Disable interactive docs outside of development to avoid exposing
-    # the full API schema to unauthenticated users in staging/production.
     docs_url="/docs" if settings.app_env == "development" else None,
     redoc_url="/redoc" if settings.app_env == "development" else None,
 )
 
+# Instrument FastAPI HTTP metrics and expose GET /metrics endpoint
+Instrumentator().instrument(app).expose(app)
+
 # Attach limiter state and exception handler
 app.state.limiter = limiter
-app.add_exception_handler(RateLimitExceeded, _rate_limit_exceeded_handler)
+app.add_exception_handler(RateLimitExceeded, _rate_limit_exceeded_handler)  # type: ignore[arg-type]
 
 app.add_middleware(
     TrustedHostMiddleware,
@@ -80,3 +86,9 @@ async def celery_ping() -> dict[str, str]:
 
     task = ping_market_worker.delay()
     return {"status": "enqueued", "task_id": task.id, "queue": "market_queue"}
+
+
+app.include_router(dashboard_router)
+app.include_router(portfolio_router)
+app.include_router(alerts_router)
+app.include_router(internal_router)

@@ -1,0 +1,18 @@
+# =============================================================================
+# Market Service — Local Development Overrides
+# =============================================================================
+services:
+  market_app:
+    volumes:
+      - .:/app
+      - /app/.venv
+
+  market_celery:
+    volumes:
+      - .:/app
+      - /app/.venv
+
+  market_celery_beat:
+    volumes:
+      - .:/app
+      - /app/.venv

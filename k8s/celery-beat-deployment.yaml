@@ -1,0 +1,59 @@
+# ------------------ Kubernetes Celery Beat Scheduler Deployment -----------------------
+# Deployment manifest for single-replica Celery Beat scheduler pod.
+# Celery Beat periodically triggers cron tasks (periodic market price polling).
+# IMPORTANT: Must always run with 'replicas: 1' to avoid duplicate scheduled tasks!
+# --------------------------------------------------------------------------
+
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: market-celery-beat
+  namespace: market-service
+  labels:
+    app: market-service
+    component: celery-beat
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: market-service
+      component: celery-beat
+  template:
+    metadata:
+      labels:
+        app: market-service
+        component: celery-beat
+    spec:
+      securityContext:
+        runAsNonRoot: true
+        runAsUser: 1000
+      containers:
+        # ------------------ Celery Beat Scheduler Process -----------------------
+        - name: celery-beat
+          image: tradingacr.azurecr.io/market-service:v1.0.0
+          imagePullPolicy: IfNotPresent
+          securityContext:
+            runAsNonRoot: true
+            allowPrivilegeEscalation: false
+            capabilities:
+              drop:
+                - ALL
+          command: ["celery", "-A", "market_service.core.celery.celery_app", "beat", "--loglevel=info", "--schedule=/tmp/celerybeat-schedule.db"]
+          envFrom:
+            - configMapRef:
+                name: market-service-config
+            - secretRef:
+                name: market-service-secret
+          volumeMounts:
+            - name: tmp-volume
+              mountPath: /tmp
+          resources:
+            requests:
+              cpu: 100m
+              memory: 128Mi
+            limits:
+              cpu: 250m
+              memory: 256Mi
+      volumes:
+        - name: tmp-volume
+          emptyDir: {}

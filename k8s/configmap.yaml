@@ -1,0 +1,36 @@
+# ------------------ Kubernetes ConfigMap Configuration -----------------------
+# ConfigMaps hold non-sensitive configuration key-value pairs.
+# These environment variables are injected into market-service API pods,
+# Celery worker pods, and Celery beat scheduler pods at container startup.
+# --------------------------------------------------------------------------
+
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: market-service-config
+  namespace: market-service
+  labels:
+    app: market-service
+    component: config
+data:
+  # ------------------ Application Environment Settings -----------------------
+  ENVIRONMENT: "production"
+  LOG_LEVEL: "INFO"
+  PORT: "8000"
+  HOST: "0.0.0.0"
+
+  # ------------------ Redis Internal Network Host -----------------------
+  # Matches the ClusterIP Service name defined in redis-service.yaml
+  REDIS_HOST: "market-redis"
+  REDIS_PORT: "6379"
+  REDIS_URL: "redis://market-redis:6379/0"
+
+  # ------------------ Security Allowed Hosts Header -----------------------
+  ALLOWED_HOSTS: '["localhost","127.0.0.1","market-service","market-service.market-service","market-service.market-service.svc.cluster.local"]'
+
+  # ------------------ Security Allowed Origins for CORS -----------------------
+  ALLOWED_ORIGINS: '["http://localhost:3000","http://localhost:5173","http://localhost:8000","http://localhost:5175","https://tradingcopilot.vercel.app","https://tradingcopilot.duckdns.org"]'
+
+  # ------------------ Numba JIT Cache Setting -----------------------
+  NUMBA_DISABLE_JIT: "1"
+  NUMBA_CACHE_DIR: "/tmp"

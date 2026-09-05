@@ -28,5 +28,14 @@ celery_app.conf.update(
     task_soft_time_limit=60,
     task_time_limit=120,
     # Task Imports
-    imports=["market_service.tasks.system_tasks"],
+    imports=[
+        "market_service.tasks.system_tasks",
+        "market_service.tasks.market_tasks",
+    ],
+    beat_schedule={
+        "update-market-prices-every-10s": {
+            "task": "market_service.tasks.market_tasks.update_market_price",
+            "schedule": 10.0,
+        },
+    },
 )

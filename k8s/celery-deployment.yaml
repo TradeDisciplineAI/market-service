@@ -1,0 +1,52 @@
+# ------------------ Kubernetes Celery Worker Deployment -----------------------
+# Deployment manifest for asynchronous Celery background worker pods.
+# Workers consume price alert evaluations and background market updates.
+# --------------------------------------------------------------------------
+
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: market-celery-worker
+  namespace: market-service
+  labels:
+    app: market-service
+    component: celery-worker
+spec:
+  replicas: 2
+  selector:
+    matchLabels:
+      app: market-service
+      component: celery-worker
+  template:
+    metadata:
+      labels:
+        app: market-service
+        component: celery-worker
+    spec:
+      securityContext:
+        runAsNonRoot: true
+        runAsUser: 1000
+      containers:
+        # ------------------ Celery Worker Process -----------------------
+        - name: celery-worker
+          image: tradingacr.azurecr.io/market-service:v1.0.0
+          imagePullPolicy: IfNotPresent
+          securityContext:
+            runAsNonRoot: true
+            allowPrivilegeEscalation: false
+            capabilities:
+              drop:
+                - ALL
+          command: ["celery", "-A", "market_service.core.celery.celery_app", "worker", "-Q", "market_queue", "--loglevel=info"]
+          envFrom:
+            - configMapRef:
+                name: market-service-config
+            - secretRef:
+                name: market-service-secret
+          resources:
+            requests:
+              cpu: 150m
+              memory: 384Mi
+            limits:
+              cpu: 500m
+              memory: 1Gi

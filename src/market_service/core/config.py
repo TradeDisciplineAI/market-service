@@ -36,11 +36,22 @@ class Settings(BaseSettings):
     log_format: str = "%(asctime)s - %(name)s - %(levelname)s - %(message)s"
 
     # Hosts
-    allowed_hosts: list[str] = ["localhost", "127.0.0.1"]
+    allowed_hosts: list[str] = [
+        "localhost",
+        "127.0.0.1",
+        "host.docker.internal",
+        "market_app",
+        "market-service",
+        "market-service.market-service",
+        "market-service.market-service.svc.cluster.local",
+        "*",
+    ]
 
-    # Market Providers & Redis
+    # Market Providers, Redis & Resend Email
     finnhub_api_key: SecretStr | None = None
-    redis_url: str = "redis://redis:6379/0"
+    redis_url: str = "redis://localhost:6379/0"
+    resend_api_key: SecretStr | None = None
+    email_from: str = "onboarding@resend.dev"
 
     # CORS
     allowed_origins: list[str] = [
@@ -49,6 +60,9 @@ class Settings(BaseSettings):
         "http://localhost:8000",
         "http://localhost:5175",
     ]
+
+    # Internal Secret
+    market_service_internal_secret: SecretStr = SecretStr("change-me")
 
     @field_validator("secret_key")
     @classmethod

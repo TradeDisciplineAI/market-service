@@ -1,0 +1,91 @@
+# ------------------ Kubernetes Market Service API Deployment -----------------------
+# Deployment manifest for the main market-service FastAPI web application.
+# Configures 2 pod replicas, container image specs, environment injections,
+# CPU/Memory resource constraints, and health checks (Liveness & Readiness probes).
+# --------------------------------------------------------------------------
+
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: market-service-app
+  namespace: market-service
+  labels:
+    app: market-service
+    component: api
+spec:
+  # ------------------ Replica Count & Pod Selection -----------------------
+  replicas: 2
+  selector:
+    matchLabels:
+      app: market-service
+      component: api
+  template:
+    metadata:
+      labels:
+        app: market-service
+        component: api
+    spec:
+      securityContext:
+        runAsNonRoot: true
+        runAsUser: 1000
+      containers:
+        # ------------------ Main FastAPI Application Container -----------------------
+        - name: market-service
+          image: tradingacr.azurecr.io/market-service:v1.0.0
+          imagePullPolicy: Always
+          securityContext:
+            runAsNonRoot: true
+            allowPrivilegeEscalation: false
+            capabilities:
+              drop:
+                - ALL
+          command: ["uvicorn", "market_service.main:app", "--host", "0.0.0.0", "--port", "8000"]
+
+          ports:
+            - containerPort: 8000
+              name: http
+
+          # ------------------ Environment Configuration References -----------------------
+          envFrom:
+            - configMapRef:
+                name: market-service-config
+            - secretRef:
+                name: market-service-secret
+
+          # ------------------ Resource Allocations & Limits -----------------------
+          # Prevents container OOM (Out Of Memory) kills and CPU starvation
+          resources:
+            requests:
+              cpu: 250m
+              memory: 256Mi
+            limits:
+              cpu: 500m
+              memory: 512Mi
+
+          # ------------------ Self-Healing Liveness Probe -----------------------
+          # Kubernetes restarts the container automatically if /health fails 3 times
+          livenessProbe:
+            httpGet:
+              path: /health
+              port: 8000
+              httpHeaders:
+                - name: Host
+                  value: localhost
+            initialDelaySeconds: 15
+            periodSeconds: 10
+            timeoutSeconds: 5
+            failureThreshold: 3
+
+          # ------------------ Traffic Readiness Probe -----------------------
+          # Ensures traffic is routed to pod only after it passes health check
+          readinessProbe:
+            httpGet:
+              path: /health
+              port: 8000
+              httpHeaders:
+                - name: Host
+                  value: localhost
+            initialDelaySeconds: 10
+            periodSeconds: 5
+            timeoutSeconds: 3
+            failureThreshold: 2
